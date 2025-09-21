@@ -159,7 +159,15 @@ def deepgemm_swizzle():
   return table
           
   
-  
+# 注：当这个shape的width超过128B时，需要进行reshape，不然SBM计算会报错
+# 这个函数计算smb相当于在里面做了reshape
+def getSBM(elem_width, gran_width, smem_shape):
+  col_num = smem_shape[1] * elem_width // gran_width
+  cache_line = col_num if col_num < 8 else 8  # cache line最长为128B，超过128B的长度不应该与这个部分进行swizzle操作
+  S = math.log2(col_num)
+  B = math.log2(cache_line)
+  M = math.log(gran_width // 2)
+  return S, B, M
 
 if __name__ == '__main__':
   # table = test()  # 16*16 f16 1*warp
