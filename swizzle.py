@@ -24,6 +24,14 @@ def showMemory(table):
   wb.save("swizzle.xlsx")
   
 def swizzle1(S, B, M, addr):
+  # M：gran_width // elem_width 取2的对数，表示移动的位数
+  # B：smem_shape[1] * elem_width // gran_width if < 8 else 8 取2的对数，表示移动位数
+  # S：smem_shape[1] * elem_width // gran_width 取2的对数，表示移动位数
+  # example：[16, 8] gran_withd
+  # addr：xxxx|xxx|xxx
+  #       2^4 |2^3|2^3
+  #        S  | B | M 
+  # S 取3位与B做异或替换B
   bmask = ((1 << B) - 1) << M
   return ((addr >> S) & bmask) ^ addr
 
@@ -32,9 +40,9 @@ def swizzle2(elem_width, gran_width, smem_shape, addr):
   gran_shape = (smem_shape[0], smem_shape[1] * elem_width // gran_width)  # (16, 2)
   gran_y = gran_addr // gran_shape[1]
   gran_x = gran_addr % gran_shape[1]
-  num_cache_line_row = (128 // (smem_shape[1] * elem_width))
-  num_cache_line_col = (smem_shape[1] * elem_width // gran_width)
-  gran_x ^= (gran_y // num_cache_line_row) % num_cache_line_col
+  num_cache_line_row = (128 // (smem_shape[1] * elem_width))  # 一个cache line 在shared row中占几行
+  num_cache_line_col = (smem_shape[1] * elem_width // gran_width)  # shared memory 有多少列
+  gran_x ^= (gran_y // num_cache_line_row) % num_cache_line_col  # 
   new_elem_addr = gran_y * smem_shape[1] + gran_x * gran_width // elem_width
   return new_elem_addr
 
